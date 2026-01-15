@@ -1,0 +1,16 @@
+{
+  "name": "tg-wa-video-bot",
+  "version": "1.0.0",
+  "description": "Telegram to WhatsApp Video Bot",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "author": "Wasif",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.13.2",
+    "express": "^4.19.2",
+    "node-telegram-bot-api": "^0.67.0"
+  }
+}

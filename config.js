@@ -1,0 +1,4 @@
+module.exports = {
+  TELEGRAM_TOKEN: "8558576354:AAHXryw_OCXg0S5W5u2Ybr1yfPh2weKQ30M",
+  OWNER_ID: 8317272274
+};
