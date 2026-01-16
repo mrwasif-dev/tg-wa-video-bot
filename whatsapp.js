@@ -6,55 +6,43 @@ const {
 
 const qrcode = require("qrcode-terminal");
 
-let sockInstance = null;
+let sock;
 
 async function startWhatsApp() {
   const { state, saveCreds } = await useMultiFileAuthState("./session");
 
-  const sock = makeWASocket({
+  sock = makeWASocket({
     auth: state,
-    printQRInTerminal: false,
-    browser: ["WhatsApp Bot", "Chrome", "1.0.0"]
+    browser: ["TG-WA-Bot", "Chrome", "1.0.0"]
   });
 
-  sockInstance = sock;
-
-  // save session
   sock.ev.on("creds.update", saveCreds);
 
-  // connection updates
   sock.ev.on("connection.update", (update) => {
     const { connection, lastDisconnect, qr } = update;
 
     if (qr) {
-      console.log("📲 Scan this QR from WhatsApp → Linked Devices");
+      console.log("📲 WhatsApp QR scan کرو");
       qrcode.generate(qr, { small: true });
     }
 
     if (connection === "open") {
-      console.log("✅ WhatsApp CONNECTED & LINKED");
+      console.log("✅ WhatsApp CONNECTED");
     }
 
     if (connection === "close") {
       const reason = lastDisconnect?.error?.output?.statusCode;
-
-      if (reason === DisconnectReason.loggedOut) {
-        console.log("❌ WhatsApp logged out. Session invalid.");
-      } else {
-        console.log("♻️ Reconnecting WhatsApp...");
+      if (reason !== DisconnectReason.loggedOut) {
         startWhatsApp();
+      } else {
+        console.log("❌ WhatsApp logged out");
       }
     }
   });
-
-  return sock;
 }
 
 function getWASocket() {
-  return sockInstance;
+  return sock;
 }
 
-module.exports = {
-  startWhatsApp,
-  getWASocket
-};
+module.exports = { startWhatsApp, getWASocket };
