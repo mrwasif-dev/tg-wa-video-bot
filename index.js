@@ -1,7 +1,5 @@
 const TelegramBot = require("node-telegram-bot-api");
 const express = require("express");
-
-// ✅ WhatsApp connector import (یہ لائن نئی ہے)
 const { startWhatsApp, getWASocket } = require("./whatsapp");
 
 const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
@@ -15,6 +13,7 @@ const bot = new TelegramBot(TELEGRAM_TOKEN);
 const PORT = process.env.PORT || 3000;
 const URL = "https://tg-wa-video-bot-wasif-38c4260858f1.herokuapp.com";
 
+// Telegram webhook
 bot.setWebHook(`${URL}/bot${TELEGRAM_TOKEN}`);
 
 app.post(`/bot${TELEGRAM_TOKEN}`, (req, res) => {
@@ -22,20 +21,46 @@ app.post(`/bot${TELEGRAM_TOKEN}`, (req, res) => {
   res.sendStatus(200);
 });
 
+// start command
 bot.onText(/\/start/, (msg) => {
   if (msg.from.id.toString() !== OWNER_ID) return;
-  bot.sendMessage(msg.chat.id, "✅ Bot online (Webhook)");
+  bot.sendMessage(msg.chat.id, "✅ Telegram + WhatsApp bridge online");
 });
 
-bot.on("video", (msg) => {
+// 🎥 Telegram → WhatsApp (video forward)
+bot.on("video", async (msg) => {
   if (msg.from.id.toString() !== OWNER_ID) return;
-  bot.sendMessage(msg.chat.id, "🎥 Video receive ho gayi");
+
+  const sock = getWASocket();
+  if (!sock) {
+    return bot.sendMessage(msg.chat.id, "❌ WhatsApp not connected");
+  }
+
+  await bot.sendMessage(msg.chat.id, "📤 WhatsApp پر بھیج رہا ہوں...");
+
+  const fileId = msg.video.file_id;
+  const file = await bot.getFile(fileId);
+  const fileUrl = `https://api.telegram.org/file/bot${TELEGRAM_TOKEN}/${file.file_path}`;
+
+  await sock.sendMessage(
+    process.env.WA_TARGET, // WhatsApp number or group JID
+    {
+      video: { url: fileUrl },
+      caption: "📹 From Telegram Bot"
+    }
+  );
+
+  bot.sendMessage(msg.chat.id, "✅ WhatsApp پر بھیج دی گئی");
 });
 
+// health check
 app.get("/", (req, res) => {
-  res.send("Bot is running");
+  res.send("Bot running");
 });
 
 app.listen(PORT, () => {
-  console.log("Server running on port", PORT);
+  console.log("🚀 Server running on", PORT);
 });
+
+// 🔥 WhatsApp start
+startWhatsApp();
