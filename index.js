@@ -4,6 +4,8 @@ const { startWhatsApp, getWASocket } = require("./whatsapp");
 
 const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
 const OWNER_ID = process.env.OWNER_ID;
+// مثال: WA_TARGET=923xxxxxxxx@s.whatsapp.net,12036xxxx@g.us
+const WA_TARGET = process.env.WA_TARGET;
 
 const app = express();
 app.use(express.json());
@@ -21,36 +23,41 @@ app.post(`/bot${TELEGRAM_TOKEN}`, (req, res) => {
   res.sendStatus(200);
 });
 
-// start command
+// /start
 bot.onText(/\/start/, (msg) => {
   if (msg.from.id.toString() !== OWNER_ID) return;
-  bot.sendMessage(msg.chat.id, "✅ Telegram + WhatsApp bridge online");
+  bot.sendMessage(msg.chat.id, "✅ Telegram → WhatsApp bridge online");
 });
 
-// 🎥 Telegram → WhatsApp (video forward)
+// 🎥 Telegram → WhatsApp (video)
 bot.on("video", async (msg) => {
   if (msg.from.id.toString() !== OWNER_ID) return;
 
   const sock = getWASocket();
   if (!sock) {
-    return bot.sendMessage(msg.chat.id, "❌ WhatsApp not connected");
+    return bot.sendMessage(msg.chat.id, "❌ WhatsApp connected nahi hai");
   }
 
-  await bot.sendMessage(msg.chat.id, "📤 WhatsApp پر بھیج رہا ہوں...");
+  await bot.sendMessage(msg.chat.id, "📤 WhatsApp par send ho rahi hai...");
 
   const fileId = msg.video.file_id;
   const file = await bot.getFile(fileId);
   const fileUrl = `https://api.telegram.org/file/bot${TELEGRAM_TOKEN}/${file.file_path}`;
 
-  await sock.sendMessage(
-    process.env.WA_TARGET, // WhatsApp number or group JID
-    {
-      video: { url: fileUrl },
-      caption: "📹 From Telegram Bot"
-    }
-  );
+  // 🔴 MULTI TARGET SUPPORT
+  const targets = WA_TARGET.split(",");
 
-  bot.sendMessage(msg.chat.id, "✅ WhatsApp پر بھیج دی گئی");
+  for (const jid of targets) {
+    await sock.sendMessage(
+      jid.trim(),
+      {
+        video: { url: fileUrl },
+        caption: "📹 From Telegram Bot"
+      }
+    );
+  }
+
+  bot.sendMessage(msg.chat.id, "✅ WhatsApp par send ho gayi");
 });
 
 // health check
