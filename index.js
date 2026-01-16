@@ -1,6 +1,9 @@
 const TelegramBot = require("node-telegram-bot-api");
 const express = require("express");
 
+// ✅ WhatsApp connector import (یہ لائن نئی ہے)
+const { startWhatsApp, getWASocket } = require("./whatsapp");
+
 const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
 const OWNER_ID = process.env.OWNER_ID;
 
